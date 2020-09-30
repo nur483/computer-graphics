@@ -39,13 +39,62 @@ public:
 
     virtual bool rayIntersect(uint32_t index, const Ray3f &ray, float &u, float &v, float &t) const override {
 
-	/* to be implemented */
-        return false;
+        // For convenience
+        auto r = m_radius;
+        auto C = m_position;
+        auto O = ray.o;
+        auto D = ray.d;
 
+        // Coefficients of quadratic equation
+        auto a = D.squaredNorm();
+        auto b = 2 * (O - C).dot(D);
+        auto c = (O - C).squaredNorm() - pow(r, 2);
+
+        // Compute discriminant
+        auto discriminat = pow(b, 2) - 4 * a * c;
+
+        // No real solutions (< 0) or 
+        // only touches sphere at single point ( = 0)
+        if (discriminat <= 0) {
+            return false;
+        }
+
+        // Compute candidates
+        auto t1 = (-b - sqrt(discriminat)) / (2 * a);
+        auto t2 = (-b + sqrt(discriminat)) / (2 * a);
+
+        // First candidate in interval
+        if (ray.mint <= t1 && t1 <= ray.maxt) {
+            t = t1;
+            return true;
+        }
+
+        // Second candidate in interval
+        if (ray.mint <= t2 && t2 <= ray.maxt) {
+            t = t2;
+            return true;
+        }
+
+        // Both candidates not in interval
+        return false;
     }
 
     virtual void setHitInformation(uint32_t index, const Ray3f &ray, Intersection & its) const override {
-        /* to be implemented */
+
+        // Set intersection point
+        its.p = ray.o + its.t * ray.d;
+
+        // Normal equals nomralized vector from center to intersection
+        // shFrame and geoFrame are the same for analytic sphere
+        auto normal = (its.p - m_position).normalized();
+        its.shFrame = its.geoFrame = Frame(normal);
+
+
+        // Compute spherical coordinates using normal direction
+        auto coordinates = sphericalCoordinates(normal);
+        coordinates.x() = 0.5 + coordinates.x() / (2.f * M_PI);
+        coordinates.y() /= M_PI;
+        its.uv = coordinates;   
     }
 
     virtual void sampleSurface(ShapeQueryRecord & sRec, const Point2f & sample) const override {
