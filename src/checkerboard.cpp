@@ -29,8 +29,14 @@ public:
     virtual std::string toString() const override;
 
     virtual T eval(const Point2f & uv) override {
-        /* to be implemented */
-	    return m_value1;
+
+        int col = int(floor(uv.x() / m_scale.x() - m_delta.x()));
+        int row = int(floor(uv.y() / m_scale.y() - m_delta.y()));
+
+        int colParity = abs(col) % 2;
+        int rowParity = abs(row) % 2;
+
+        return rowParity == colParity ? m_value1 : m_value2;
     }
 
 protected:
