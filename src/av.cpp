@@ -29,7 +29,7 @@ public:
     }
 
     std::string toString() const {
-        return "NormalIntegrator[]";
+        return "AvIntegrator[]";
     }
 
 private:
