@@ -81,18 +81,64 @@ public:
     }
 
     /// Evaluate the BRDF for the given pair of directions
-    virtual Color3f eval(const BSDFQueryRecord &bRec) const override {
-    	throw NoriException("MicrofacetBRDF::eval(): not implemented!");
+    Color3f eval(const BSDFQueryRecord &bRec) const override {
+    	auto wi = bRec.wi;
+    	auto wo = bRec.wo;
+    	auto wh = (wi + wo).normalized();
+
+    	auto D = evalBeckmann(wh);
+    	auto F = fresnel(wh.dot(wi), m_extIOR, m_intIOR);
+    	auto G = smithBeckmannG1(wi, wh) * smithBeckmannG1(wo, wh);
+
+        return m_kd * INV_PI + m_ks * D * F * G / (4 * Frame::cosTheta(wi) * Frame::cosTheta(wo));
     }
 
     /// Evaluate the sampling density of \ref sample() wrt. solid angles
-    virtual float pdf(const BSDFQueryRecord &bRec) const override {
-    	throw NoriException("MicrofacetBRDF::pdf(): not implemented!");
+    float pdf(const BSDFQueryRecord &bRec) const override {
+        auto wi = bRec.wi;
+        auto wo = bRec.wo;
+        auto wh = (wi + wo).normalized();
+
+        // reject the sample by returning 0
+        if (Frame::cosTheta(wo) <= 0) {
+            return 0;
+        }
+
+        auto D = evalBeckmann(wh);
+        auto Jh = 1 / (4 * wh.dot(wo));
+
+        return m_ks * D * Frame::cosTheta(wh) * Jh + (1 - m_ks) * Frame::cosTheta(wo) * INV_PI;
     }
 
     /// Sample the BRDF
-    virtual Color3f sample(BSDFQueryRecord &bRec, const Point2f &_sample) const override {
-    	throw NoriException("MicrofacetBRDF::sample(): not implemented!");
+    Color3f sample(BSDFQueryRecord &bRec, const Point2f &_sample) const override {
+        auto wi = bRec.wi;
+        Vector3f wo, wh;
+
+        if (Frame::cosTheta(wi) <= 0) {
+            return 0;
+        }
+
+        // Sample microfacet with probability ks
+        if (_sample.x() < m_ks) {
+            Point2f sample(_sample.x() / m_ks, _sample.y());
+            // randomly generate wh, with PDF proportional to D (= backmann)
+            wh = Warp::squareToBeckmann(sample, m_alpha);
+            // reflect incident direction wi about wh to obtain wo
+            wo = (2 * wi.dot(wh) * wh - wi).normalized();
+        }
+        else {
+            Point2f sample((_sample.x() - m_ks) / (1 - m_ks), _sample.y());
+            wo = Warp::squareToCosineHemisphere(sample);
+        }
+
+        bRec.wo = wo;
+
+        auto cosTheta = Frame::cosTheta(wo);
+        if (cosTheta <= 0) {
+            return 0;
+        }
+        return eval(bRec) * cosTheta / pdf(bRec);
     }
 
     virtual std::string toString() const override {

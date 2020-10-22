@@ -19,7 +19,7 @@ public:
 
         /* Compute average visibility */
         Normal3f n = its.shFrame.n;
-        Ray3f castedRay(its.p, Warp().sampleUniformHemisphere(sampler, n), Epsilon, m_length);
+        Ray3f castedRay(its.p, Warp::sampleUniformHemisphere(sampler, n), Epsilon, m_length);
 
         if (scene->rayIntersect(castedRay, its)) {
             return Color3f(0.0f);

@@ -101,7 +101,7 @@ float Warp::squareToUniformHemispherePdf(const Vector3f &v) {
 
 Vector3f Warp::squareToCosineHemisphere(const Point2f &sample) {
     auto phi = 2 * M_PI * sample.x();
-    auto theta =  acos(sample.y());
+    auto theta =  acos(sqrt(sample.y()));
     return {sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)};
 }
 

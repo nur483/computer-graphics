@@ -40,21 +40,43 @@ public:
         if(!m_shape)
             throw NoriException("There is no shape attached to this Area light!");
 
-        throw NoriException("To implement...");
+        if (lRec.n.dot(lRec.wi) < 0) {
+            return m_radiance;
+        }
+        return 0;
     }
 
     virtual Color3f sample(EmitterQueryRecord & lRec, const Point2f & sample) const override {
         if(!m_shape)
             throw NoriException("There is no shape attached to this Area light!");
 
-        throw NoriException("To implement...");
+        ShapeQueryRecord sRec(lRec.ref);
+        m_shape->sampleSurface(sRec, sample);
+        lRec.p = sRec.p;
+        lRec.n = sRec.n;
+
+        auto direction = (lRec.p - lRec.ref);
+        lRec.wi = direction.normalized();
+        lRec.shadowRay = Ray3f(lRec.ref, lRec.wi, Epsilon, direction.norm() - Epsilon);
+        lRec.pdf = pdf(lRec);
+        if (lRec.pdf > 0) {
+            return eval(lRec) / lRec.pdf;
+        }
+        return 0;
     }
 
     virtual float pdf(const EmitterQueryRecord &lRec) const override {
         if(!m_shape)
             throw NoriException("There is no shape attached to this Area light!");
 
-        throw NoriException("To implement...");
+        auto dotProduct = lRec.n.dot(lRec.wi);
+        if (dotProduct < 0) {
+            ShapeQueryRecord sRec(lRec.ref, lRec.p);
+            auto pdf = m_shape->pdfSurface(sRec);
+            auto sNorm = (lRec.ref - lRec.p).squaredNorm();
+            return pdf * sNorm / -dotProduct;
+        }
+        return 0;
     }
 
 
