@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'>
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" type="image/vnd.microsoft.icon" href="../favicon.ico" />
+
+    <title>Computer Graphics - PA3</title>
+
+    <link href="resources/bootstrap.min.css" rel="stylesheet">
+    <link href="resources/offcanvas.css" rel="stylesheet">
+    <link href="resources/custom2014.css" rel="stylesheet">
+    <link href="resources/twentytwenty.css" rel="stylesheet" type="text/css" />
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+
+<div class="container headerBar">
+		<h1>Programming Assignment 3 - Daniel Sparber</h1>
+</div>
+
+<div class="container contentWrapper">
+<div class="pageContent">
+
+	<!-- ================================================================= -->
+
+	<h2>Part 1: Light Sampling</h2>
+
+	<h3>Integrator Implementation</h3>
+
+    <p>See src folder</p>
+
+    <h3>Shape Area Light Implementation</h3>
+
+    <p>See src folder</p>
+
+    <h3>Validation</h3>
+
+    <h4>Screenshots test results</h4>
+
+    See Part 3
+
+    <h4>Comparison: rendering to reference images</h4>
+
+    <div class="twentytwenty-container">
+        <img src="images/sphere/ref/point_ems.png" alt="Reference" class="img-responsive">
+        <img src="images/sphere/point_ems.png" alt="Mine" class="img-responsive">
+    </div>
+    <br>
+    <div class="twentytwenty-container">
+        <img src="images/sphere/ref/sphere_ems.png" alt="Reference" class="img-responsive">
+        <img src="images/sphere/sphere_ems.png" alt="Mine" class="img-responsive">
+    </div>
+    <br>
+    <div class="twentytwenty-container">
+        <img src="images/sphere/ref/sphere_mesh_ems.png" alt="Reference" class="img-responsive">
+        <img src="images/sphere/sphere_mesh_ems.png" alt="Mine" class="img-responsive">
+    </div>
+    <br>
+    <div class="twentytwenty-container">
+        <img src="images/sphere/ref/sphere2_ems.png" alt="Reference" class="img-responsive">
+        <img src="images/sphere/sphere2_ems.png" alt="Mine" class="img-responsive">
+    </div>
+    <br>
+    <div class="twentytwenty-container">
+        <img src="images/sphere/ref/sphere2_mesh_ems.png" alt="Reference" class="img-responsive">
+        <img src="images/sphere/sphere2_mesh_ems.png" alt="Mine" class="img-responsive">
+    </div>
+    <br>
+
+    <div class="twentytwenty-container">
+        <img src="images/odyssey/ref/odyssey_ems_64spp.png" alt="Reference" class="img-responsive">
+        <img src="images/odyssey/odyssey_ems.png" alt="Mine" class="img-responsive">
+    </div>
+    <br>
+    <div class="twentytwenty-container">
+        <img src="images/veach_mi/ref/veach_ems_256spp.png" alt="Reference" class="img-responsive">
+        <img src="images/veach_mi/veach_ems.png" alt="Mine" class="img-responsive">
+    </div>
+    <br>
+
+    <br> <br> <br> <br>
+
+	<!-- ================================================================= -->
+
+	<h2>Part 2: BRDF Sampling</h2>
+
+    <h3>Integrator Implementation</h3>
+
+    <p>See src folder</p>
+
+
+    <h3>Microfacet BRDF Implementation</h3>
+
+    <p>See src folder</p>
+
+    <h3>Validation</h3>
+
+    <h4>Screenshots test results</h4>
+
+    <h5>chi2test-microfacet.xml</h5>
+    <img src="images/tests/chi2test.png" alt="Test results" class="img-responsive"/>
+    <h5>ttest-microfacet.xml</h5>
+    <img src="images/tests/ttest.png" alt="Test results" class="img-responsive"/>
+
+    For test-mesh.xml and test-mesh-furnace.xml See Part 3
+
+    <h4>Comparison: rendering to reference images</h4>
+
+    <div class="twentytwenty-container">
+        <img src="images/sphere/ref/sphere_mats.png" alt="Reference" class="img-responsive">
+        <img src="images/sphere/sphere_mats.png" alt="Mine" class="img-responsive">
+    </div>
+    <br>
+    <div class="twentytwenty-container">
+        <img src="images/sphere/ref/sphere2_mats.png" alt="Reference" class="img-responsive">
+        <img src="images/sphere/sphere2_mats.png" alt="Mine" class="img-responsive">
+    </div>
+    <div class="twentytwenty-container">
+        <img src="images/odyssey/ref/odyssey_mats_64spp.png" alt="Reference" class="img-responsive">
+        <img src="images/odyssey/odyssey_mats.png" alt="Mine" class="img-responsive">
+    </div>
+    <br>
+    <div class="twentytwenty-container">
+        <img src="images/veach_mi/ref/veach_mats_256spp.png" alt="Reference" class="img-responsive">
+        <img src="images/veach_mi/veach_mats.png" alt="Mine" class="img-responsive">
+    </div>
+    <br>
+
+    <br> <br> <br> <br>
+
+	<!-- ================================================================= -->
+
+    <h2>Part 3: Multiple Importance Sampling</h2>
+
+
+    <h3>Integrator Implementation</h3>
+
+    <p>See src folder</p>
+
+    <h3>Validation</h3>
+
+    <h4>Screenshots test results</h4>
+
+    <h5>test-mesh.xml</h5>
+    <img src="images/tests/test-mesh.png" alt="Test results" class="img-responsive"/>
+    <h5>test-mesh-furnace.xml</h5>
+    <img src="images/tests/test-mesh-furnace.png" alt="Test results" class="img-responsive"/>
+
+    <h4>Comparison: rendering to reference images</h4>
+
+    <div class="twentytwenty-container">
+        <img src="images/odyssey/ref/odyssey_mis_32spp.png" alt="Reference" class="img-responsive">
+        <img src="images/odyssey/odyssey_mis.png" alt="Mine" class="img-responsive">
+    </div>
+    <br>
+    <div class="twentytwenty-container">
+        <img src="images/veach_mi/ref/veach_mis_128spp.png" alt="Reference" class="img-responsive">
+        <img src="images/veach_mi/veach_mis.png" alt="Mine" class="img-responsive">
+    </div>
+    <br>
+
+    <h3>Image Validation</h3>
+
+    <p>4-way comparison for each of the 2 scenes. Each scene compares 3 integrators (direct_ems, direct_mats, direct_mis) with the reference MIS rendering.</p>
+
+    <div class="twentytwenty-container">
+        <img src="images/odyssey/ref/odyssey_mis_32spp.png" alt="Reference" class="img-responsive">
+        <img src="images/odyssey/odyssey_ems.png" alt="EMS" class="img-responsive">
+        <img src="images/odyssey/odyssey_mats.png" alt="MATS" class="img-responsive">
+        <img src="images/odyssey/odyssey_mis.png" alt="MIS" class="img-responsive">
+    </div> <br>
+
+    <div class="twentytwenty-container">
+        <img src="images/veach_mi/ref/veach_mis_128spp.png" alt="Reference" class="img-responsive">
+        <img src="images/veach_mi/veach_ems.png" alt="EMS" class="img-responsive">
+        <img src="images/veach_mi/veach_mats.png" alt="MATS" class="img-responsive">
+        <img src="images/veach_mi/veach_mis.png" alt="MIS" class="img-responsive">
+    </div> <br>
+</div>
+</div>
+
+
+<!-- Bootstrap core JavaScript -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script src="resources/bootstrap.min.js"></script>
+<script src="/js/offcanvas.js"></script>
+<script src="resources/jquery.event.move.js"></script>
+<script src="resources/jquery.twentytwenty.js"></script>
+
+
+<script>
+$(window).load(function(){$(".twentytwenty-container").twentytwenty({default_offset_pct: 0.5});});
+</script>
+
+</body>
+</html>
