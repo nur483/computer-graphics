@@ -35,7 +35,7 @@ public:
             Li += wMat * t * Le;
 
             // russian roulette with termination probability (1 - p)
-            auto p = std::min(t.maxCoeff(), 1.f);
+            auto p = std::min(t.maxCoeff(), .99f);
             if (sampler->next1D() > p) {
                 break;
             }

@@ -31,7 +31,7 @@ public:
             Li += t * Le;
 
             // russian roulette with success probability p
-            auto p = std::min(t.maxCoeff(), 1.f);
+            auto p = std::min(t.maxCoeff(), .99f);
             if (sampler->next1D() > p)  {
                 break;
             }
