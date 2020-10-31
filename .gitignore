@@ -10,4 +10,8 @@ Makefile
 *.cmake
 .idea
 
+# Exclude png and exr files in scene folder
+scenes/**/*.png
+scenes/**/*.exr
+
 .vscode/settings.json
