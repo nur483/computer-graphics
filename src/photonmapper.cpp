@@ -52,9 +52,11 @@ public:
 		if (m_photonRadius == 0)
 			m_photonRadius = scene->getBoundingBox().getExtents().norm() / 500.0f;
 
+        m_emittedCount = 0;
 
 		int depositedPhotonsCount = 0;
 		while (depositedPhotonsCount < m_photonCount) {
+            ++m_emittedCount;
 
             Ray3f pathRay;
             Intersection xi;
@@ -97,9 +99,6 @@ public:
     }
 
     Color3f Li(const Scene *scene, Sampler *sampler, const Ray3f &_ray) const override {
-    	
-
-
 
         Ray3f pathRay = _ray;
         Intersection xo;
@@ -129,7 +128,7 @@ public:
                     auto fr = xo.mesh->getBSDF()->eval(bRec);
                     photonDensityEstimation += fr * photon.getPower();
                 }
-                photonDensityEstimation /= M_PI * pow(m_photonRadius, 2) * m_photonCount;
+                photonDensityEstimation /= M_PI * pow(m_photonRadius, 2) * m_emittedCount;
 
                 Li += t * photonDensityEstimation;
                 break;
@@ -170,6 +169,7 @@ private:
      * NOT the number of emitted photons. You will need to keep track of those yourself.
      */ 
     int m_photonCount;
+    int m_emittedCount;
     float m_photonRadius;
     std::unique_ptr<PhotonMap> m_photonMap;
 };
