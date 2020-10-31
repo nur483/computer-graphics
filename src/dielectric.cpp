@@ -62,12 +62,11 @@ public:
                 eta = 1 / eta;
             }
             bRec.wo = (
-                    -eta * (wi - cosTheta * n)
+                    -eta * (wi - wi.dot(n) * n)
                     - n * sqrt(1 - pow(eta, 2) * (1 - pow(wi.dot(n), 2)))
             ).normalized();
             bRec.eta = eta;
         }
-
         bRec.measure = EDiscrete;
         return 1;
 
