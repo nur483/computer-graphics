@@ -36,12 +36,12 @@ public:
         m_photonRadius = props.getFloat("photonRadius", 0.0f /* Default: automatic */);
     }
 
-    virtual void preprocess(const Scene *scene) override {
+    void preprocess(const Scene *scene) override {
         cout << "Gathering " << m_photonCount << " photons .. ";
         cout.flush();
 
         /* Create a sample generator for the preprocess step */
-        Sampler *sampler = static_cast<Sampler *>(
+        Sampler *sampler = dynamic_cast<Sampler *>(
             NoriObjectFactory::createInstance("independent", PropertyList()));
 
         /* Allocate memory for the photon map */
@@ -52,45 +52,109 @@ public:
 		if (m_photonRadius == 0)
 			m_photonRadius = scene->getBoundingBox().getExtents().norm() / 500.0f;
 
-	
 
-		/* How to add a photon?
-		 * m_photonMap->push_back(Photon(
-		 *	Point3f(0, 0, 0),  // Position
-		 *	Vector3f(0, 0, 1), // Direction
-		 *	Color3f(1, 2, 3)   // Power
-		 * ));
-		 */
+		int depositedPhotonsCount = 0;
+		while (depositedPhotonsCount < m_photonCount) {
 
-		// put your code to trace photons here
+            Ray3f pathRay;
+            Intersection xi;
+
+            auto randomEmitter = scene->getRandomEmitter(sampler->next1D());
+            Color3f W = randomEmitter->samplePhoton(pathRay, sampler->next2D(), sampler->next2D()) *
+                     scene->getLights().size();
+
+            while (true) {
+
+                if (!scene->rayIntersect(pathRay, xi)) {
+                    break;
+                }
+
+                if (xi.mesh->getBSDF()->isDiffuse()) {
+                    m_photonMap->push_back(Photon(xi.p, -pathRay.d, W));
+                    ++depositedPhotonsCount;
+                }
+
+                // russian roulette with success probability p
+                auto p = std::min(W.maxCoeff(), .99f);
+                if (sampler->next1D() > p) {
+                    break;
+                }
+                W /= p;
+
+
+                // Sample from BSDF
+                BSDFQueryRecord bRec(xi.shFrame.toLocal(-pathRay.d));
+                bRec.uv = xi.uv;
+                auto bsdfCosThetaOverPdf = xi.mesh->getBSDF()->sample(bRec, sampler->next2D());
+                W *= bsdfCosThetaOverPdf;
+
+                pathRay = Ray3f(xi.p, xi.shFrame.toWorld(bRec.wo));
+            }
+        }
 
 		/* Build the photon map */
         m_photonMap->build();
     }
 
-    virtual Color3f Li(const Scene *scene, Sampler *sampler, const Ray3f &_ray) const override {
+    Color3f Li(const Scene *scene, Sampler *sampler, const Ray3f &_ray) const override {
     	
-		/* How to find photons?
-		 * std::vector<uint32_t> results;
-		 * m_photonMap->search(Point3f(0, 0, 0), // lookup position
-		 *                     m_photonRadius,   // search radius
-		 *                     results);
-		 *
-		 * for (uint32_t i : results) {
-		 *    const Photon &photon = (*m_photonMap)[i];
-		 *    cout << "Found photon!" << endl;
-		 *    cout << " Position  : " << photon.getPosition().toString() << endl;
-		 *    cout << " Power     : " << photon.getPower().toString() << endl;
-		 *    cout << " Direction : " << photon.getDirection().toString() << endl;
-		 * }
-		 */
 
-		// put your code for path tracing with photon gathering here
 
-		return Color3f{};
+
+        Ray3f pathRay = _ray;
+        Intersection xo;
+
+        Color3f t(1);
+        Color3f Li(0);
+
+        while (true) {
+
+            if (!scene->rayIntersect(pathRay, xo)) {
+                break;
+            }
+
+            if (xo.mesh->isEmitter()) {
+                EmitterQueryRecord eRec(pathRay.o, xo.p, xo.shFrame.n);
+                Li += t * xo.mesh->getEmitter()->eval(eRec);
+            }
+
+            if (xo.mesh->getBSDF()->isDiffuse()) {
+                Color3f photonDensityEstimation(0);
+                std::vector<uint32_t> results;
+                m_photonMap->search(xo.p, m_photonRadius,results);
+                for (auto i : results) {
+                    const Photon &photon = (*m_photonMap)[i];
+                    BSDFQueryRecord bRec(xo.shFrame.toLocal(-pathRay.d), xo.shFrame.toLocal(photon.getDirection()), ESolidAngle);
+                    bRec.uv = xo.uv;
+                    auto fr = xo.mesh->getBSDF()->eval(bRec);
+                    photonDensityEstimation += fr * photon.getPower();
+                }
+                photonDensityEstimation /= M_PI * pow(m_photonRadius, 2) * m_photonCount;
+
+                Li += t * photonDensityEstimation;
+                break;
+            }
+
+            // russian roulette with success probability p
+            auto p = std::min(t.maxCoeff(), .99f);
+            if (sampler->next1D() > p) {
+                break;
+            }
+            t /= p;
+
+
+            // Sample from BSDF
+            BSDFQueryRecord bRec(xo.shFrame.toLocal(-pathRay.d));
+            bRec.uv = xo.uv;
+            auto bsdfCosThetaOverPdf = xo.mesh->getBSDF()->sample(bRec, sampler->next2D());
+            t *= bsdfCosThetaOverPdf;
+
+            pathRay = Ray3f(xo.p, xo.shFrame.toWorld(bRec.wo));
+        }
+		return Li;
     }
 
-    virtual std::string toString() const override {
+    std::string toString() const override {
         return tfm::format(
             "PhotonMapper[\n"
             "  photonCount = %i,\n"

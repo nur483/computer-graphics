@@ -28,7 +28,7 @@ public:
         m_radiance = props.getColor("radiance");
     }
 
-    virtual std::string toString() const override {
+    std::string toString() const override {
         return tfm::format(
                 "AreaLight[\n"
                 "  radiance = %s,\n"
@@ -36,7 +36,7 @@ public:
                 m_radiance.toString());
     }
 
-    virtual Color3f eval(const EmitterQueryRecord & lRec) const override {
+    Color3f eval(const EmitterQueryRecord & lRec) const override {
         if(!m_shape)
             throw NoriException("There is no shape attached to this Area light!");
 
@@ -46,7 +46,7 @@ public:
         return 0;
     }
 
-    virtual Color3f sample(EmitterQueryRecord & lRec, const Point2f & sample) const override {
+    Color3f sample(EmitterQueryRecord & lRec, const Point2f & sample) const override {
         if(!m_shape)
             throw NoriException("There is no shape attached to this Area light!");
 
@@ -65,7 +65,7 @@ public:
         return 0;
     }
 
-    virtual float pdf(const EmitterQueryRecord &lRec) const override {
+    float pdf(const EmitterQueryRecord &lRec) const override {
         if(!m_shape)
             throw NoriException("There is no shape attached to this Area light!");
 
@@ -80,8 +80,26 @@ public:
     }
 
 
-    virtual Color3f samplePhoton(Ray3f &ray, const Point2f &sample1, const Point2f &sample2) const override {
-        throw NoriException("To implement...");
+    Color3f samplePhoton(Ray3f &ray, const Point2f &sample1, const Point2f &sample2) const override {
+        ShapeQueryRecord sRec;
+        m_shape->sampleSurface(sRec, sample1);
+
+        auto pdf = sRec.pdf;
+        auto direction = Frame(sRec.n).toWorld(Warp::squareToCosineHemisphere(sample2));
+        ray = Ray3f(sRec.p, direction);
+
+        if (pdf == 0) {
+            return 0;
+        }
+
+        // Constant pdf => pdf = 1 / area
+        auto area = 1 / pdf;
+
+        // Get Le
+        EmitterQueryRecord eRec(sRec.p + direction, sRec.p, sRec.n);
+        auto Le = eval(eRec);
+
+        return M_PI * area * Le;
     }
 
 
