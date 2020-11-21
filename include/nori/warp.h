@@ -81,6 +81,17 @@ public:
     /// Probability density of \ref squareToBeckmann()
     static float squareToBeckmannPdf(const Vector3f &m, float alpha);
 
+    /// Warp a uniformly distributed square sample to a GTR1 distribution for the given 'alpha' parameter
+    static Vector3f squareToGTR1(const Point2f &sample, float alpha);
+
+    /// Probability density of \ref squareToGTR1()
+    static float squareToGTR1Pdf(const Vector3f &m, float alpha);
+
+    /// Warp a uniformly distributed square sample to a GTR2 distribution for the given 'alpha' parameter
+    static Vector3f squareToGTR2(const Point2f &sample, float alpha);
+
+    /// Probability density of \ref squareToGTR2()
+    static float squareToGTR2Pdf(const Vector3f &m, float alpha);
 
     static Vector3f squareToUniformTriangle(const Point2f &sample);
 

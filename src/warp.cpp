@@ -72,7 +72,7 @@ Vector3f Warp::squareToUniformSphereCap(const Point2f &sample, float cosThetaMax
 }
 
 float Warp::squareToUniformSphereCapPdf(const Vector3f &v, float cosThetaMax) {
-    if (abs(1 - v.norm()) > Epsilon || v.z() < cosThetaMax) { 
+    if (abs(1 - v.norm()) > Epsilon || v.z() < cosThetaMax) {
         return 0;
     }
     return INV_TWOPI / (1 - cosThetaMax);
@@ -117,7 +117,7 @@ Vector3f Warp::squareToBeckmann(const Point2f &sample, float alpha) {
 
 float Warp::squareToBeckmannPdf(const Vector3f &m, float alpha) {
     auto theta = acos(m.z());
-    if (abs(1 - m.norm()) > Epsilon || m.z() < 0) { 
+    if (abs(1 - m.norm()) > Epsilon || m.z() < 0) {
         return 0;
     }
     auto a2 = pow(alpha, 2);
@@ -127,7 +127,46 @@ float Warp::squareToBeckmannPdf(const Vector3f &m, float alpha) {
 Vector3f Warp::squareToUniformTriangle(const Point2f &sample) {
     float su1 = sqrtf(sample.x());
     float u = 1.f - su1, v = sample.y() * su1;
-    return Vector3f(u,v,1.f-u-v);
+    return {u, v, 1.f - u - v};
+}
+
+Vector3f Warp::squareToGTR1(const Point2f &sample, float alpha) {
+    auto phi = 2 * M_PI * sample.x();
+    auto theta = 0.f;
+    if (alpha < 1.f) {
+        auto alpha2 = alpha * alpha;
+        theta = acos(sqrt((1 - pow(alpha2, 1 - sample.y())) / (1 - alpha2)));
+    }
+    return {sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)};
+}
+
+float Warp::squareToGTR1Pdf(const Vector3f &m, float alpha) {
+    if (abs(1 - m.norm()) > Epsilon || m.z() < 0) {
+        return 0;
+    }
+    if (alpha >= 1) {
+        return INV_PI;
+    }
+    auto cosTheta = m.z();
+    auto alpha2 = alpha * alpha;
+    auto t = 1 + (alpha2 - 1) * cosTheta * cosTheta;
+    return (alpha2 - 1) / (M_PI * log(alpha2) * t);
+}
+
+Vector3f Warp::squareToGTR2(const Point2f &sample, float alpha) {
+    float phi = 2 * M_PI * sample.x();
+    float theta = acos(sqrt((1 - sample.y()) / (1 + (alpha * alpha - 1) * sample.y())));
+    return {sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)};
+}
+
+float Warp::squareToGTR2Pdf(const Vector3f &m, float alpha) {
+    if (abs(1 - m.norm()) > Epsilon || m.z() < 0) {
+        return 0;
+    }
+    auto cosTheta = m.z();
+    float alpha2 = alpha * alpha;
+    float t = 1 + (alpha2 - 1) * cosTheta * cosTheta;
+    return alpha2 / (M_PI * t * t);
 }
 
 NORI_NAMESPACE_END

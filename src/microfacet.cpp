@@ -89,8 +89,10 @@ public:
     	auto D = evalBeckmann(wh);
     	auto F = fresnel(wh.dot(wi), m_extIOR, m_intIOR);
     	auto G = smithBeckmannG1(wi, wh) * smithBeckmannG1(wo, wh);
+        auto Jh = 1 / (4 * wh.dot(wo));
 
-        return m_kd * INV_PI + m_ks * D * F * G / (4 * Frame::cosTheta(wi) * Frame::cosTheta(wo));
+        return m_kd * INV_PI
+            + m_ks * D * F * G * Jh;
     }
 
     /// Evaluate the sampling density of \ref sample() wrt. solid angles
