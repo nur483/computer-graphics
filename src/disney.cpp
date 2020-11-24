@@ -2,6 +2,7 @@
 #include <nori/frame.h>
 #include <nori/warp.h>
 #include <nori/texture.h>
+#include "utils.cpp"
 
 NORI_NAMESPACE_BEGIN
 
@@ -33,14 +34,6 @@ public:
     }
     ~Disney() override {
         delete m_albedo;
-    }
-
-    // Linear interpolation
-    static Color3f mix(const float & a, const float& b, const float& t) {
-        return (1 - t) * a + t * b;
-    }
-    static Color3f mix(const Color3f& a, const Color3f& b, const float& t) {
-        return (1 - t) * a + t * b;
     }
 
     static float SchlickFresnel(const float& u) {
@@ -90,7 +83,7 @@ public:
 
         // Subsurface (ss)
         auto Fss90 = cosTheta_d * cosTheta_d * m_roughness;
-        auto Fss =  mix(1, Fss90, Fl) * mix(1, Fss90, Fv);
+        auto Fss = mix(1, Fss90, Fl) * mix(1, Fss90, Fv);
         auto f_subsurface = 1.25 * (Fss * (1 / (cosTheta_l + cosTheta_v) - .5) + .5) * baseColor;
 
 
