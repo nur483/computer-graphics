@@ -3,7 +3,6 @@
 #include <nori/warp.h>
 #include <nori/texture.h>
 #include "utils.cpp"
-
 NORI_NAMESPACE_BEGIN
 
 /**
@@ -13,19 +12,19 @@ class Disney : public BSDF {
 
 private:
     Texture<Color3f> * m_albedo;
-    Color3f m_specular;
+    float m_specular;
     float m_metallic;
     float m_roughness;
     float m_subsurface;
     float m_specularTint;
 
 public:
-    Disney(const PropertyList &propList) : m_albedo(nullptr) {
+    explicit Disney(const PropertyList &propList) {
         PropertyList l;
         l.setColor("value", propList.getColor("albedo", 0));
-        m_albedo = static_cast<Texture<Color3f> *>(NoriObjectFactory::createInstance("constant_color", l));
+        m_albedo = dynamic_cast<Texture<Color3f> *>(NoriObjectFactory::createInstance("constant_color", l));
 
-        m_specular = propList.getColor("specular", 0);
+        m_specular = propList.getFloat("specular", 0);
         m_metallic = propList.getFloat("metallic", 0);
         m_roughness = propList.getFloat("roughness", 0);
         m_subsurface = propList.getFloat("subsurface", 0);
@@ -41,7 +40,7 @@ public:
         return pow(m, 5);
     }
 
-    static float smithGGX(float cosTheta_v, float alpha) {
+    static float smithGGX(const float& cosTheta_v, const float& alpha) {
         float a = alpha * alpha;
         float b = cosTheta_v * cosTheta_v;
         return 1 / (cosTheta_v + sqrt(a + b - a * b));
@@ -62,8 +61,8 @@ public:
         auto cosTheta_h = Frame::cosTheta(h);
         auto cosTheta_d = l.dot(h);
 
-        // Inside
-        if (cosTheta_v < 0 || cosTheta_l < 0) {
+        // Inside or wrong measure
+        if (cosTheta_v <= 0 || cosTheta_l <= 0 || bRec.measure != ESolidAngle) {
             return 0;
         }
 
@@ -80,7 +79,6 @@ public:
         auto Fd90 = .5f + 2 * m_roughness * cosTheta_d * cosTheta_d;
         auto f_diffuse = mix(1, Fd90, Fl) * mix(1, Fd90, Fv) * baseColor;
 
-
         // Subsurface (ss)
         auto Fss90 = cosTheta_d * cosTheta_d * m_roughness;
         auto Fss = mix(1, Fss90, Fl) * mix(1, Fss90, Fv);
@@ -89,7 +87,7 @@ public:
 
         // Specular (s)
         auto alpha = std::max(0.001f, m_roughness * m_roughness);
-        auto Ds = Warp::squareToGTR2Pdf(cosTheta_h, alpha);
+        auto Ds = Warp::squareToGTR2Pdf(h, alpha);
         auto Fh = SchlickFresnel(cosTheta_d);
         auto Gs = smithGGX(cosTheta_l, alpha) * smithGGX(cosTheta_v, alpha);
         auto f_specular = mix(specularColor, 1, Fh);
@@ -101,28 +99,29 @@ public:
     }
 
     /// Compute the density of \ref sample() wrt. solid angles
-    virtual float pdf(const BSDFQueryRecord &bRec) const override {
+    float pdf(const BSDFQueryRecord &bRec) const override {
         auto v = bRec.wi;
         auto l = bRec.wo;
         auto h = (v + l).normalized();
 
+        auto cosTheta_v = Frame::cosTheta(v);
         auto cosTheta_l = Frame::cosTheta(l);
         auto cosTheta_h = Frame::cosTheta(h);
 
-        if (cosTheta_l <= 0) {
+        if (cosTheta_l <= 0 || cosTheta_v <= 0 || bRec.measure != ESolidAngle) {
             return 0;
         }
 
         auto alpha = std::max(0.001f, m_roughness * m_roughness);
         auto Jh = 1 / (4 * h.dot(l));
-        auto Ds = Warp::squareToGTR2Pdf(cosTheta_h, alpha);
+        auto Ds = Warp::squareToGTR2Pdf(h, alpha);
 
         return (1 - m_metallic) * cosTheta_l * INV_PI
                 + m_metallic * Ds * cosTheta_h * Jh;
     }
 
     /// Draw a a sample from the BRDF model
-    virtual Color3f sample(BSDFQueryRecord &bRec, const Point2f &sample) const override {
+    Color3f sample(BSDFQueryRecord &bRec, const Point2f &sample) const override {
         auto v = bRec.wi;
         Vector3f l, h;
 
@@ -132,7 +131,7 @@ public:
 
         auto diffuse = (1 - m_metallic);
 
-        if (sample.x() < diffuse) {
+        if (sample.x() <= diffuse) {
             l = Warp::squareToCosineHemisphere({sample.x() / diffuse, sample.y()});
         }
         else {
@@ -141,7 +140,10 @@ public:
             h = Warp::squareToGTR2(newSample, alpha);
             l = (2 * v.dot(h) * h - v).normalized();
         }
+
         bRec.wo = l;
+        bRec.eta = 1;
+        bRec.measure = ESolidAngle;
 
         auto cosTheta = Frame::cosTheta(l);
         if (cosTheta <= 0) {
@@ -159,7 +161,7 @@ public:
         if(!m_albedo) {
             PropertyList l;
             l.setColor("value", Color3f(0.5f));
-            m_albedo = static_cast<Texture<Color3f> *>(NoriObjectFactory::createInstance("constant_color", l));
+            m_albedo = dynamic_cast<Texture<Color3f> *>(NoriObjectFactory::createInstance("constant_color", l));
             m_albedo->activate();
         }
     }
@@ -171,7 +173,7 @@ public:
                 if(obj->getIdName() == "albedo") {
                     if (m_albedo)
                         throw NoriException("There is already an albedo defined!");
-                    m_albedo = static_cast<Texture<Color3f> *>(obj);
+                    m_albedo = dynamic_cast<Texture<Color3f> *>(obj);
                 }
                 else {
                     throw NoriException("The name of this texture does not match any field!");
@@ -196,7 +198,7 @@ public:
             "  subsurface = %s\n"
             "]",
             m_albedo->toString(),
-            m_specular.toString(),
+            m_specular,
             m_specularTint,
             m_metallic,
             m_roughness,

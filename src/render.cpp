@@ -125,7 +125,6 @@ void RenderThread::renderScene(const std::string & filename) {
         size_t lastdot = outputName.find_last_of(".");
         if (lastdot != std::string::npos)
             outputName.erase(lastdot, std::string::npos);
-        outputName += ".exr";
 
         /* Do the following in parallel and asynchronously */
         m_render_status = 1;
@@ -179,11 +178,12 @@ void RenderThread::renderScene(const std::string & filename) {
                 };
 
                 /// Uncomment the following line for single threaded rendering
-                //map(range);
-
+#ifndef NDEBUG
+                map(range);
+#else
                 /// Default: parallel rendering
                 tbb::parallel_for(range, map);
-
+#endif
                 blockGenerator.reset();
             }
 
@@ -196,7 +196,9 @@ void RenderThread::renderScene(const std::string & filename) {
             m_block.unlock();
 
             /* Save using the OpenEXR format */
-            bitmap->save(outputName);
+            bitmap->save(outputName + ".exr");
+            // Save as PNG
+            bitmap->saveToLDR(outputName + ".png");
 
             delete m_scene;
             m_scene = nullptr;

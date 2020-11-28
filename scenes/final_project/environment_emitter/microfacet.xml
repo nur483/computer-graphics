@@ -1,0 +1,43 @@
+<scene version="0.5.0">
+    <!-- Integrator -->
+    <integrator type="direct_mis"/>
+
+    <!-- Perspective camera -->
+    <camera type="perspective">
+        <transform name="toWorld">
+            <scale value="-1,1,1"/>
+            <lookat target="0,0,1" origin="5,5,1" up="0,0,1"/>
+        </transform>
+        <float name="fov" value="100"/>
+
+        <integer name="height" value="600"/>  <!-- have to choose proper values -->
+        <integer name="width" value="800"/>
+    </camera>
+
+
+
+    <!-- Sample generator, number of samples per pixel -->
+    <sampler type="independent">
+        <integer name="sampleCount" value="64"/>
+    </sampler>
+
+
+    <mesh type="sphere">
+        <point name="center" value="0,0,0"/>
+        <float name="radius" value="300"/>
+
+        <emitter type="environment">
+            <string name="envMapPath" value="../resources/envmaps/wooden_lounge.exr"/>
+        </emitter>
+    </mesh>
+
+    <mesh type="sphere">
+        <point name="center" value="0,0,1"/>
+        <float name="radius" value="2"/>
+        <bsdf type="microfacet">
+            <color name="kd" value="0.1,0,0"/>
+            <float name="alpha" value="0.01" />
+        </bsdf>
+    </mesh>
+
+</scene>

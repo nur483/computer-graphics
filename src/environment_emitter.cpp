@@ -20,20 +20,20 @@ public:
     explicit EnvironmentEmitter(const PropertyList &props) {
         auto envMapPath = props.getString("envMapPath");
         m_envMap = Bitmap(envMapPath);
+        m_rows = m_envMap.rows();
+        m_cols = m_envMap.cols();
 
         // Precompute (marginal) pdf and cdf
         preCompute();
     }
 
     void preCompute() {
-        m_rows = m_envMap.rows();
-        m_cols = m_envMap.cols();
 
         // Luminance * sinTheta
         Eigen::MatrixXf luminance(m_rows, m_cols);
         for (int i = 0; i < m_rows; ++i) {
             for (int j = 0; j < m_cols; ++j) {
-                auto theta = M_PI * (i / m_rows - 1);
+                auto theta = M_PI * i / (m_rows - 1);
                 luminance(i, j) = m_envMap(i, j).getLuminance() * sin(theta);
             }
         }
@@ -74,7 +74,7 @@ public:
         int index = -1;
         while (a <= b) {
             int m = (a + b + 1) / 2;
-            if (cdf(m) < sample) {
+            if (cdf(m) <= sample) {
                 index = m;
                 a = m + 1;
             }
@@ -82,15 +82,6 @@ public:
                 b = m - 1;
             }
         }
-
-        // TODO: Remove
-        for (int i = 0; i < n; ++i) {
-            if (cdf(i) >= sample) {
-                assert((i - 1) == index);
-                break;
-            }
-        }
-
         return index;
     }
 
@@ -106,20 +97,31 @@ public:
         auto i = sampleDiscrete(m_cdfTheta, sample.x());
         auto j = sampleDiscrete(m_conditionalCdfPhi.row(i).transpose(), sample.y());
 
-        auto theta = M_PI * (i / m_rows - 1);
-        auto phi = 2 * M_PI * (j / m_cols - 1);
+        auto theta = M_PI * i / (m_rows - 1);
+        auto phi = 2 * M_PI * j / (m_cols - 1);
 
         eRec.wi = sphericalDirection(theta, phi);
-        eRec.shadowRay = Ray3f(eRec.ref, eRec.wi, Epsilon, std::numeric_limits<double>::infinity());
+        Ray3f ray(eRec.ref, eRec.wi, Epsilon, std::numeric_limits<double>::infinity());
 
-        return eval(eRec) / pdf(eRec);
+        // Calculate self intersection, set maxt accordingly
+        float u, v, t;
+        m_shape->rayIntersect(0, eRec.shadowRay, u, v, t);
+        eRec.shadowRay.maxt = t - Epsilon;
+
+        auto pdfValue = pdf(eRec);
+        if (pdfValue == 0) {
+            return 0;
+        }
+        return eval(eRec) / pdfValue;
     }
 
     float pdf(const EmitterQueryRecord &eRec) const override {
-
         int i, j;
         std::tie(i, j) = get_ij(eRec);
 
+        if (m_pdfTheta(i) == 0) {
+            return 0;
+        }
         return m_pdfTheta(i) * m_conditionalPdfPhi(i, j);
     }
 
@@ -128,8 +130,8 @@ public:
         auto theta = thetaPhi.x();
         auto phi = thetaPhi.y();
 
-        auto i = int(round(theta * (m_rows -1) / M_PI));
-        auto j = int(round(phi  * 0.5 * (m_cols - 1) / M_PI));
+        auto i = int(round(theta * (m_rows - 1) * INV_PI));
+        auto j = int(round(phi  * 0.5 * (m_cols - 1) * INV_PI));
 
         return {i, j};
     }
