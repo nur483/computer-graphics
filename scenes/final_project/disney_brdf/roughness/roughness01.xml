@@ -27,16 +27,20 @@
         <float name="radius" value="300"/>
 
         <emitter type="environment">
-            <string name="envMapPath" value="../resources/envmaps/wooden_lounge.exr"/>
+            <string name="envMapPath" value="../resources/envmaps/venice_sunset.exr"/>
         </emitter>
     </mesh>
 
     <mesh type="sphere">
         <point name="center" value="0,0,1"/>
-        <float name="radius" value="2"/>
-        <bsdf type="microfacet">
-            <color name="kd" value="0.5,0,0"/>
-            <float name="alpha" value="0.01" />
+        <float name="radius" value="4"/>
+        <bsdf type="disney">
+            <color name="albedo" value="1,0,0"/>
+            <float name="specular" value="1"/>
+            <float name="metallic" value="1"/>
+            <float name="roughness" value="0.1"/>
+            <float name="subsurface" value="0"/>
+            <float name="specularTint" value="0"/>
         </bsdf>
     </mesh>
 

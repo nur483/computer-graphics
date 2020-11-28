@@ -233,7 +233,7 @@ inline int clamp(int value, int min, int max) {
 }
 
 /// Linearly interpolate between two values
-inline float lerp(float t, float v1, float v2) {
+inline float lerp(float v1, float v2, float t) {
     return ((float) 1 - t) * v1 + t * v2;
 }
 

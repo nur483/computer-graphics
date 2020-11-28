@@ -1,6 +1,6 @@
 <scene version="0.5.0">
     <!-- Integrator -->
-    <integrator type="direct_mis"/>
+    <integrator type="path_mis"/>
 
     <!-- Perspective camera -->
     <camera type="perspective">
@@ -27,16 +27,14 @@
         <float name="radius" value="300"/>
 
         <emitter type="environment">
-            <string name="envMapPath" value="../resources/envmaps/wooden_lounge.exr"/>
+            <string name="envMapPath" value="../resources/envmaps/the_sky_is_on_fire.exr"/>
         </emitter>
     </mesh>
 
     <mesh type="sphere">
         <point name="center" value="0,0,1"/>
         <float name="radius" value="2"/>
-        <bsdf type="microfacet">
-            <color name="kd" value="0.5,0,0"/>
-            <float name="alpha" value="0.01" />
+        <bsdf type="mirror">
         </bsdf>
     </mesh>
 
