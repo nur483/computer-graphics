@@ -2,6 +2,7 @@
 #include <nori/warp.h>
 #include <nori/shape.h>
 #include <nori/bitmap.h>
+#include "utils.cpp"
 
 NORI_NAMESPACE_BEGIN
 
@@ -86,10 +87,26 @@ public:
     }
 
     Color3f eval(const EmitterQueryRecord & eRec) const override {
-        int i, j;
-        std::tie(i, j) = get_ij(eRec);
+        auto thetaPhi = sphericalCoordinates(eRec.wi);
 
-        return m_envMap(i, j);
+        float u, v;
+        std::tie(u, v) = get_uv(eRec);
+
+        // Perform a bilinear interpolation
+        int i1 = clamp(int(floor(u)), 0, m_rows - 1);
+        int i2 = clamp(int(floor(u)) + 1, 0, m_rows - 1);
+        int j1 = clamp(int(floor(v)), 0, m_cols - 1);
+        int j2 = clamp(int(floor(v)) + 1, 0, m_cols - 1);
+
+        auto q11 = m_envMap(i1, j1);
+        auto q12 = m_envMap(i1, j2);
+        auto q21 = m_envMap(i2, j1);
+        auto q22 = m_envMap(i2, j2);
+
+        auto tu = u - i1;
+        auto tv = v - j1;
+
+        return bilinear(q11, q12, q21, q22, tu, tv);
     }
 
     Color3f sample(EmitterQueryRecord& eRec, const Point2f& sample) const override {
@@ -112,7 +129,9 @@ public:
         if (pdfValue == 0) {
             return 0;
         }
-        return eval(eRec) / pdfValue;
+
+        auto J = (m_cols - 1) * (m_rows - 1) / (2 * M_PI * M_PI * Frame::sinTheta(eRec.wi));
+        return eval(eRec) / (J * pdfValue);
     }
 
     float pdf(const EmitterQueryRecord &eRec) const override {
@@ -125,13 +144,24 @@ public:
         return m_pdfTheta(i) * m_conditionalPdfPhi(i, j);
     }
 
-    std::tuple<int, int> get_ij(const EmitterQueryRecord &eRec) const {
+    std::tuple<float, float> get_uv(const EmitterQueryRecord &eRec) const {
         auto thetaPhi = sphericalCoordinates(eRec.wi);
         auto theta = thetaPhi.x();
         auto phi = thetaPhi.y();
 
-        auto i = int(round(theta * (m_rows - 1) * INV_PI));
-        auto j = int(round(phi  * 0.5 * (m_cols - 1) * INV_PI));
+        auto u = theta * (m_rows - 1) * INV_PI;
+        auto v = phi  * 0.5 * (m_cols - 1) * INV_PI;
+
+        return {u, v};
+    }
+
+    std::tuple<int, int> get_ij(const EmitterQueryRecord &eRec) const {
+
+        float u, v;
+        std::tie(u, v) = get_uv(eRec);
+
+        auto i = int(round(u));
+        auto j = int(round(v));
 
         return {i, j};
     }

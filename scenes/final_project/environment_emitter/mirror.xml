@@ -27,7 +27,7 @@
         <float name="radius" value="300"/>
 
         <emitter type="environment">
-            <string name="envMapPath" value="../resources/envmaps/the_sky_is_on_fire.exr"/>
+            <string name="envMapPath" value="../resources/envmaps/wooden_lounge.exr"/>
         </emitter>
     </mesh>
 

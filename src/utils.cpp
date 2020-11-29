@@ -10,6 +10,6 @@ static Color3f mix(const Color3f& a, const Color3f& b, const float t) {
 }
 
 // Bilinear interpolation
-static Color3f bilinear(const Color3f &q11, const Color3f &q12, const Color3f &q21, const Color3f &q22, const float& t1, const float& t2) {
-    return mix(mix(q11, q12, t1), mix(q21, q22, t1), t2);
+static Color3f bilinear(const Color3f &q11, const Color3f &q12, const Color3f &q21, const Color3f &q22, const float& tu, const float& tv) {
+    return mix(mix(q11, q21, tu), mix(q12, q22, tu), tv);
 }

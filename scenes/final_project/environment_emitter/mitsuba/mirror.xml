@@ -1,0 +1,43 @@
+<scene version="2.0.0">
+
+    <!-- Integrator -->
+    <integrator type="path">
+        <integer name="max_depth" value="5"/>
+    </integrator>
+
+    <!-- Perspective camera -->
+    <sensor type="perspective">
+        <transform name="to_world">
+            <scale value="-1,1,1"/>
+            <lookat target="0,0,1" origin="5,5,1" up="0,0,1"/>
+        </transform>
+        <float name="fov" value="100"/>
+
+        <!-- Sample generator, number of samples per pixel -->
+        <sampler type="independent">
+            <integer name="sample_count" value="64"/>
+        </sampler>
+
+        <!-- Output definition -->
+        <film type="hdrfilm">
+            <integer name="height" value="600"/> 
+            <integer name="width" value="800"/>
+        </film>
+    </sensor>
+
+
+    <emitter type="envmap">
+        <string name="filename" value="../resources/envmaps/wooden_lounge.exr"/>
+        <transform name="to_world">
+			<rotate x="1" angle="90"/>
+		</transform>
+    </emitter>
+
+    <shape type="sphere">
+        <point name="center" value="0,0,1"/>
+        <float name="radius" value="2"/>
+        <bsdf type="conductor">
+            <string name="material" value="none"/>
+        </bsdf>
+    </shape>
+</scene>
