@@ -27,6 +27,7 @@ add_executable(nori
         include/nori/integrator.h
         include/nori/emitter.h
         include/nori/kdtree.h
+        include/nori/medium.h
         include/nori/mesh.h
         include/nori/object.h
         include/nori/parser.h
@@ -87,6 +88,7 @@ add_executable(nori
         src/disney.cpp
         src/environment_emitter.cpp
         src/utils.cpp
+        src/heterogeneous_medium.cpp
         )
 
 # The following lines build the warping test application
@@ -114,6 +116,11 @@ add_dependencies(nori tbb_p)
 add_dependencies(nori pugixml)
 add_dependencies(warptest nori)
 add_dependencies(tonemapper nori)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+find_package(OpenVDB REQUIRED)
+include_directories(${OpenVDB_INCLUDE_DIR} SYSTEM)
+target_link_libraries(nori  ${OpenVDB_LIBRARIES})
 
 # Link to dependency libraries
 target_link_libraries(nori ${extra_libs})

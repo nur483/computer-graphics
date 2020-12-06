@@ -16,11 +16,15 @@
     along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#pragma once
+
 #if !defined(__NORI_SCENE_H)
 #define __NORI_SCENE_H
 
 #include <nori/bvh.h>
 #include <nori/emitter.h>
+#include <nori/medium.h>
+#include <limits>
 
 NORI_NAMESPACE_BEGIN
 
@@ -34,10 +38,10 @@ NORI_NAMESPACE_BEGIN
 class Scene : public NoriObject {
 public:
     /// Construct a new scene object
-    Scene(const PropertyList &);
+    explicit Scene(const PropertyList &);
 
     /// Release all memory
-    virtual ~Scene();
+    ~Scene() override;
 
     /// Return a pointer to the scene's kd-tree
     const BVH *getBVH() const { return m_bvh; }
@@ -70,6 +74,22 @@ public:
                 static_cast<size_t>(std::floor(n*rnd)),
                 n-1);
         return m_emitters[index];
+    }
+
+    /// Return the closest medium that intersects given ray
+    const Medium* getMedium(const Ray3f& ray, float &nearT, float &farT) const {
+        Medium* result = nullptr;
+        float tMin = std::numeric_limits<float>::max();
+        for (auto medium : m_media) {
+            float t1, t2;
+            if (medium->rayIntersect(ray, t1, t2) && t1 < tMin) {
+                tMin = t1;
+                nearT = t1;
+                farT = t2;
+                result = medium;
+            }
+        }
+        return result;
     }
 
     /**
@@ -123,15 +143,15 @@ public:
      * Initializes the internal data structures (kd-tree,
      * emitter sampling data structures, etc.)
      */
-    virtual void activate() override;
+    void activate() override;
 
     /// Add a child object to the scene (meshes, integrators etc.)
-    virtual void addChild(NoriObject *obj) override;
+    void addChild(NoriObject *obj) override;
 
     /// Return a string summary of the scene (for debugging purposes)
-    virtual std::string toString() const override;
+    std::string toString() const override;
 
-    virtual EClassType getClassType() const override { return EScene; }
+    EClassType getClassType() const override { return EScene; }
 private:
     std::vector<Shape *> m_shapes;
     Integrator *m_integrator = nullptr;
@@ -140,6 +160,7 @@ private:
     BVH *m_bvh = nullptr;
 
     std::vector<Emitter *> m_emitters;
+    std::vector<Medium *> m_media;
 };
 
 NORI_NAMESPACE_END

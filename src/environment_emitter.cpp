@@ -121,8 +121,8 @@ public:
         Ray3f ray(eRec.ref, eRec.wi, Epsilon, std::numeric_limits<double>::infinity());
 
         // Calculate self intersection, set maxt accordingly
-        float u, v, t;
-        m_shape->rayIntersect(0, eRec.shadowRay, u, v, t);
+        float t;
+        m_shape->rayIntersect(eRec.shadowRay, t);
         eRec.shadowRay.maxt = t - Epsilon;
 
         auto pdfValue = pdf(eRec);

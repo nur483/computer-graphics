@@ -129,6 +129,13 @@ public:
     //// Return the centroid of the given triangle
     virtual Point3f getCentroid(uint32_t index) const = 0;
 
+    /// Helper function: calls rayIntersect(index, ray, u, v, t) but only uses ray and t
+    bool rayIntersect(const Ray3f& ray, float &t) const {
+        float u, v;
+        bool intersects = rayIntersect(0, ray, u, v, t);
+        return intersects;
+    }
+
     //// Ray-Shape intersection test
     virtual bool rayIntersect(uint32_t index, const Ray3f &ray, float &u, float &v, float &t) const = 0;
 

@@ -49,7 +49,7 @@ void Scene::activate() {
     
     if (!m_sampler) {
         /* Create a default (independent) sampler */
-        m_sampler = static_cast<Sampler*>(
+        m_sampler = dynamic_cast<Sampler*>(
             NoriObjectFactory::createInstance("independent", PropertyList()));
         m_sampler->activate();
     }
@@ -62,34 +62,38 @@ void Scene::activate() {
 void Scene::addChild(NoriObject *obj) {
     switch (obj->getClassType()) {
         case EMesh: {
-                Shape *mesh = static_cast<Shape *>(obj);
-                m_bvh->addShape(mesh);
-                m_shapes.push_back(mesh);
-                if(mesh->isEmitter())
-                    m_emitters.push_back(mesh->getEmitter());
-            }
+            auto *mesh = dynamic_cast<Shape *>(obj);
+            m_bvh->addShape(mesh);
+            m_shapes.push_back(mesh);
+            if (mesh->isEmitter())
+                m_emitters.push_back(mesh->getEmitter());
+        }
             break;
-        
+        case EMedium: {
+            auto *medium = dynamic_cast<Medium *>(obj);
+            m_media.push_back(medium);
+            break;
+        }
         case EEmitter:
-            m_emitters.push_back(static_cast<Emitter *>(obj));
+            m_emitters.push_back(dynamic_cast<Emitter *>(obj));
             break;
 
         case ESampler:
             if (m_sampler)
                 throw NoriException("There can only be one sampler per scene!");
-            m_sampler = static_cast<Sampler *>(obj);
+            m_sampler = dynamic_cast<Sampler *>(obj);
             break;
 
         case ECamera:
             if (m_camera)
                 throw NoriException("There can only be one camera per scene!");
-            m_camera = static_cast<Camera *>(obj);
+            m_camera = dynamic_cast<Camera *>(obj);
             break;
         
         case EIntegrator:
             if (m_integrator)
                 throw NoriException("There can only be one integrator per scene!");
-            m_integrator = static_cast<Integrator *>(obj);
+            m_integrator = dynamic_cast<Integrator *>(obj);
             break;
 
         default:
