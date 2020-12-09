@@ -13,7 +13,7 @@ public:
     Color3f Li(const Scene *scene, Sampler *sampler, const Ray3f &ray) const override {
 
         Color3f t(1);
-        Color3f tNew(1);
+        Color3f tNew;
         Color3f Li(0);
 
         Intersection x0;
@@ -50,13 +50,12 @@ public:
 
                 // Isotropic Scattering
                 auto direction = Warp::squareToUniformSphere(sampler->next2D());
-                auto pdf = Warp::squareToUniformSpherePdf(direction);
 
                 pathRay = Ray3f(mRec.p, direction);
             }
 
             // Surface interaction
-            else {
+            else if (intersectsScene) {
                 Color3f Le(0);
                 if (x0.mesh->isEmitter()) {
                     EmitterQueryRecord lRec(pathRay.o, x0.p, x0.shFrame.n);
@@ -72,6 +71,9 @@ public:
                 tNew = t * frCosThetaOverPdf;
 
                 pathRay = Ray3f(x0.p, x0.shFrame.toWorld(bRec.wo));
+            }
+            else {
+                break;
             }
 
             // russian roulette with success probability p

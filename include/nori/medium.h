@@ -20,7 +20,6 @@ struct MediumQueryRecord {
     bool hasInteraction = false;
 
     explicit MediumQueryRecord(float tMax) : tMax(tMax) {}
-
 };
 
 class Medium : public NoriObject {
@@ -29,24 +28,15 @@ public:
 
     virtual Color3f sampleFreePath(const Ray3f& ray, Sampler *sampler, MediumQueryRecord& mRec) const = 0;
 
-    virtual float Tr(const Ray3f &ray, Sampler *sampler, MediumQueryRecord& mRec) const = 0;
+    virtual Color3f Tr(const Ray3f &ray, Sampler *sampler, MediumQueryRecord& mRec) const = 0;
 
     std::string toString() const override = 0;
 
-    bool rayIntersect(const Ray3f &ray, float &nearT, float &farT) const {
-        return m_bbox.rayIntersect(ray, nearT, farT);
-    }
+    virtual bool rayIntersect(const Ray3f &ray, float &nearT, float &farT) const = 0;
 
     EClassType getClassType() const override {
         return EMedium;
     }
-
-    BoundingBox3f getBbox() const {
-        return m_bbox;
-    }
-
-private:
-    BoundingBox3f m_bbox;
 
 };
 

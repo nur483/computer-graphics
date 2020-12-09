@@ -7,19 +7,29 @@ class HeterogeneousMedium : public Medium {
 
 private:
     openvdb::FloatGrid::Ptr m_density;
-    float m_sigmaA; // Absorption coefficient
-    float m_sigmaS; // Scattering coefficient
-    float m_sigmaT; // Extinction coefficient
+    Color3f m_sigmaA; // Absorption coefficient
+    Color3f m_sigmaS; // Scattering coefficient
+    Color3f m_sigmaT; // Extinction coefficient
 
     float m_maxDensity;
+
+    BoundingBox3f m_bbox;
+    BoundingBox3i m_bboxVoxelGrid;
 
 public:
 
     explicit HeterogeneousMedium(const PropertyList &props) {
-        auto filePath = props.getString("vdbPath");
-        m_sigmaA = props.getFloat("sigmaA", 0);
-        m_sigmaS = props.getFloat("sigmaS", 0);
+
+        m_sigmaA = props.getColor("sigma_a", 1);
+        m_sigmaS = props.getColor("sigma_s", 1);
         m_sigmaT = m_sigmaS + m_sigmaA;
+
+        auto size = props.getVector3("size", Vector3f(0.4)).cwiseAbs();
+        auto center = props.getPoint3("center", Vector3f(0.f));
+        m_bbox = BoundingBox3f(center - size / 2, center + size / 2);
+
+
+        auto filePath = props.getString("vdb_path");
 
         openvdb::initialize();
         openvdb::io::File file(filePath);
@@ -32,18 +42,28 @@ public:
                 m_density = openvdb::gridPtrCast<openvdb::FloatGrid>(baseGrid);
             }
         }
-        openvdb::FloatGrid::Accessor accessor = m_density->getAccessor();
-        auto bboxMin = m_density->metaValue<openvdb::Vec3I>("file_bbox_min");
-        auto bboxMax = m_density->metaValue<openvdb::Vec3I>("file_bbox_max");
-        getBbox().min << bboxMin.x(), bboxMin.y(), bboxMin.z();
-        getBbox().max << bboxMax.x(), bboxMax.y(), bboxMax.z();
+
+        cout << "Reading meta data" << endl;
+        for (auto iter = m_density->beginMeta(); iter != m_density->endMeta(); ++iter) {
+            const std::string& name = iter->first;
+            openvdb::Metadata::Ptr value = iter->second;
+            std::string valueAsString = value->str();
+            std::cout << name << " = " << valueAsString << " (" << value->typeName() << ")" << std::endl;
+        }
+        auto bboxMin = m_density->getMetadata<openvdb::Vec3IMetadata>("file_bbox_min")->value();
+        auto bboxMax = m_density->getMetadata<openvdb::Vec3IMetadata>("file_bbox_max")->value();
+        BoundingBox3i bbox(
+            {bboxMin.x(), bboxMin.y(), bboxMin.z()},
+            {bboxMax.x(), bboxMax.y(), bboxMax.z()}
+        );
+        m_bboxVoxelGrid = bbox;
 
         file.close();
 
         m_maxDensity = 0;
-        for (unsigned int x = bboxMin.x(); x < bboxMax.x(); ++x) {
-            for (unsigned int y = bboxMin.y(); y < bboxMax.y(); ++y) {
-                for (unsigned int z = bboxMin.z(); z < bboxMax.z(); ++z) {
+        for (int x = bboxMin.x(); x < bboxMax.x(); ++x) {
+            for (int y = bboxMin.y(); y < bboxMax.y(); ++y) {
+                for (int z = bboxMin.z(); z < bboxMax.z(); ++z) {
                     auto density =  m_density->getAccessor().getValue(openvdb::Coord(x, y, z));
                     m_maxDensity = std::max(m_maxDensity, density);
                     if (density < 0) {
@@ -60,34 +80,56 @@ public:
     Color3f sampleFreePath(const Ray3f &ray, Sampler *sampler, MediumQueryRecord &mRec) const override {
         float t = Epsilon;
 
-        while ((t += sampleDt(sampler)) < mRec.tMax) {
+        float nearT, farT;
+        rayIntersect(ray, nearT, farT);
+        float tMax = std::min(mRec.tMax, farT);
+
+        while ((t += sampleDt(sampler)) < tMax) {
             if (evalDensity(ray(t)) / m_maxDensity > sampler->next1D()) {
+                mRec.hasInteraction = true;
+                mRec.p = ray(t);
                 return m_sigmaS / m_sigmaT; // Real collision
             }
         }
         return 1; // No real collision
     }
 
-    float Tr(const Ray3f &ray, Sampler *sampler, MediumQueryRecord &mRec) const override {
+    Color3f Tr(const Ray3f &ray, Sampler *sampler, MediumQueryRecord &mRec) const override {
         float t = Epsilon;
-        float tr = 1;
+        Color3f tr = 1;
 
-        while ((t += sampleDt(sampler)) < mRec.tMax) {
+        float nearT, farT;
+        rayIntersect(ray, nearT, farT);
+        float tMax = std::min(mRec.tMax, farT);
+
+        while ((t += sampleDt(sampler)) < tMax) {
             tr *= 1 - evalDensity(ray(t)) / m_maxDensity;
         }
         return tr;
     }
 
     float evalDensity(const Point3f &p) const {
-        if (!getBbox().contains(p)) {
-            return 0;
+        if (!m_bbox.contains(p)) {
+            //return 0;
         }
-        openvdb::Coord xyz(p.x(), p.y(), p.z());
+        Point3f pGrid = (p - m_bbox.min).cwiseQuotient(m_bbox.max - m_bbox.min);
+
+        Vector3i gridSize = m_bboxVoxelGrid.max - m_bboxVoxelGrid.min;
+
+        int x = m_bboxVoxelGrid.min.x() + int(round(pGrid.x() * gridSize.x()));
+        int y = m_bboxVoxelGrid.min.y() + int(round(pGrid.y() * gridSize.y()));
+        int z = m_bboxVoxelGrid.min.z() + int(round(pGrid.z() * gridSize.z()));
+
+        openvdb::Coord xyz(x, y, z);
         return m_density->getAccessor().getValue(xyz);
     }
 
     float sampleDt(Sampler *sampler) const {
-        return -log(1 - sampler->next1D()) / (m_maxDensity * m_sigmaT);
+        return -log(1 - sampler->next1D()) / (m_maxDensity * m_sigmaT.maxCoeff());
+    }
+
+    bool rayIntersect(const Ray3f &ray, float &nearT, float &farT) const override {
+        return m_bbox.rayIntersect(ray, nearT, farT);
     }
 
     NoriObject::EClassType getClassType() const override {
